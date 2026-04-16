@@ -1,0 +1,29 @@
+# Compiled binaries
+*.out
+*.exe
+e1_1_serial
+e1_1_parallel
+e1_1_atomic
+e1_1_reduction
+e1_2_serial
+e1_2_parallel
+
+# Object files
+*.o
+*.a
+*.so
+
+# Debug / crash files
+core
+core.*
+*.core
+
+# Editor / temporary files
+*~
+*.swp
+*.swo
+*.tmp
+
+# OS noise
+.DS_Store
+Thumbs.db
