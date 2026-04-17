@@ -105,3 +105,171 @@ Proper work decomposition is essential
 reduction is the preferred method for parallel summation
 Parallel output order is not deterministic
 Scheduling strategies can influence performance and load balancing
+
+
+
+## Task 3: OpenMP Sections (MIMD Work Sharing)
+
+In this task, I explored the use of OpenMP `sections`, which enable **MIMD-style parallelism** (Multiple Instructions, Multiple Data). Unlike `parallel for`, where all threads execute the same loop, `sections` allow different threads to execute completely different blocks of code.
+
+---
+
+### Objective
+
+The goal of this task was to:
+- understand how `#pragma omp sections` works
+- debug a program that **hangs or behaves incorrectly**
+- identify issues related to thread execution and synchronization
+- fix the program to run correctly and terminate cleanly
+
+---
+
+### Code Structure
+
+The program initializes two arrays `a[]` and `b[]`, and defines two independent computations:
+
+- **Section 1**:
+  ```c
+  c[i] = a[i] * b[i];
+
+
+(element-wise multiplication)
+
+Section 2:
+
+c[i] = a[i] + b[i];
+
+
+(element wise addition)
+
+These are executed inside:
+
+
+#pragma omp sections
+{
+    #pragma omp section
+    { ... }
+
+    #pragma omp section
+    { ... }
+}
+
+
+
+# Observed Problem
+
+
+The original program:
+
+- sometimes hung (never terminated)
+- sometimes produced inconsistent output
+
+The root cause was related to how sections assign work to threads.
+
+
+Root Cause Analysis
+
+In OpenMP sections:
+
+each section is executed by one thread only
+if there are more threads than sections, some threads:
+do not execute any section
+skip directly to the next part of the program
+
+However, the original code assumed that all threads would execute a section:
+
+
+while (1) {
+    if (section == 1 || section == 2)
+        break;
+}
+
+
+
+
+Problem:
+
+threads that did not execute any section had an uninitialized section variable
+these threads could get stuck in an infinite loop
+
+
+# Fixes applied:
+
+1. Proper thread identification
+Replaced placeholder values:
+
+tid = omp_get_thread_num();
+nthreads = omp_get_num_threads();
+
+
+
+
+2. Initialization of section
+
+Added:
+
+section = 0; 
+
+This ensures:
+
+Threads that execute no section have a defined state
+
+
+3. Removed infinite loop
+
+The probelmatic loop was removed entirely
+
+
+while (1) { ... }
+
+Reason:
+
+It relied in incorrect  assumtions about thread participation
+
+
+
+4. Safe Handling of Threads with No Work
+Added:
+
+if (section == 0) {
+    printf("Thread %d executed no section.\n", tid);
+}
+
+
+5. Synchronization
+Used barriers to maintain clean output:
+
+#pragma omp barrier
+
+and allowed implicit synchronization at the end of sections
+
+
+Final Behavior
+
+With OMP_NUM_THREADS=4, the program produces:
+
+- 4 threads are created
+- 2 threads execute the sections:
+- one handles multiplication
+- one handles addition
+- remaining threads:
+- execute no section
+- continue safely
+- all threads reach the end and terminate correctly
+
+
+Key points:
+
+- sections implement MIMD parallelism, not loop-based parallelism
+- not all threads are guaranteed to receive work
+- uninitialized variables in parallel regions can cause serious bugs
+- synchronization and correct initialization are critical
+- thread-safe code must also handle the case of idle threads
+
+
+Conclusion:
+
+Writing parallel code requires understanding both how work is assigned and how threads behave when
+no work is assigned in sections
+
+
