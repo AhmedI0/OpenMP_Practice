@@ -273,3 +273,89 @@ Writing parallel code requires understanding both how work is assigned and how t
 no work is assigned in sections
 
 
+
+
+
+## Task 4: Parallel Matrix Multiplication
+
+In this task, I implemented and parallelized matrix multiplication using OpenMP.
+
+### Objective
+
+- Understand nested loop parallelization
+- Identify independent computations
+- Apply OpenMP correctly without introducing race conditions
+
+---
+
+### Problem Description
+
+Matrix multiplication is defined as:
+
+
+prod[i][j] = Σ (m1[i][k] * m2[k][j]) (formula used)
+
+
+
+Where:
+- `i` → row index
+- `j` → column index
+- `k` → inner accumulation index
+
+---
+
+### Parallelization Strategy
+
+The computation of each element `prod[i][j]` is independent.
+
+Therefore, parallelization was applied to the **outer loop**:
+
+```c
+#pragma omp for schedule(static)
+for (i = 0; i < r1; i++)
+
+
+Each thread computes different rows of the output matrix
+
+- each thread works on different rows , so no overlap
+- no shared writes , so no race conditions
+- no need for critical or atomic 
+
+
+scheduling 
+
+used:
+
+
+schedule(static)
+
+Reason:
+
+- Each row has equal workload
+- Static scheduling minimizes overhead
+- Provides balanced work distribution
+
+Observations:
+
+- Program executed correctly with multiple threads
+- Output matrix matched expected mathematical results
+- No synchronization primitives were needed
+
+Keypoints:
+
+- Nested loops require careful selection of parallelization level
+- Parallelizing outer loops is often the safest approach
+- Avoid parallelizing inner accumulation loops unless using reduction
+- Proper work decomposition eliminates need for synchronization
+
+
+
+Conclusion 
+
+This task demonstarted how real computational problems can be efficiently parallelized using openMP by:
+
+- identifying independent units of work
+- distributing them across threads
+- maintaining correctness without synchronization overheard
+
+
